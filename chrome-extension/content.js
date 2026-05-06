@@ -53,8 +53,12 @@ window.xcolabExtractTweets = function() {
 
 // 监听来自 popup 的消息
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.type === 'PING') {
+    sendResponse({ ok: true });
+    return;
+  }
   if (msg.type === 'EXTRACT_TWEETS') {
-    const tweets = window.xcolabExtractTweets();
+    const tweets = window.xcolabExtractTweets ? window.xcolabExtractTweets() : [];
     sendResponse({ tweets });
   }
   return true;

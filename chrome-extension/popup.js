@@ -57,7 +57,12 @@ async function scanTab() {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     
-    // Call content script's extract function via message
+    // Inject content script first, then call it
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      files: ['content.js']
+    });
+    await chrome.tabs.sendMessage(tab.id, { type: 'PING' });
     const results = await chrome.tabs.sendMessage(tab.id, { type: 'EXTRACT_TWEETS' });
     cachedTweets = results?.tweets || [];
     
