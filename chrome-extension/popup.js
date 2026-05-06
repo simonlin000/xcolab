@@ -1,4 +1,5 @@
 // popup.js — xcolab extension popup logic
+// Sends tweets by injecting a script into the X page (bypasses CORS)
 
 const SERVER_DEFAULT = 'http://localhost:8765';
 const KEYWORDS_ZH = [
@@ -9,7 +10,6 @@ const KEYWORDS_ZH = [
 
 let cachedTweets = [];
 
-// DOM elements
 const scanBtn = document.getElementById('scanBtn');
 const result = document.getElementById('result');
 const preview = document.getElementById('preview');
@@ -18,45 +18,36 @@ const previewCount = document.getElementById('previewCount');
 const serverUrlInput = document.getElementById('serverUrl');
 const statusDot = document.getElementById('statusDot');
 const statusText = document.getElementById('statusText');
-const openSettingsBtn = document.getElementById('openSettings');
 
-// Load saved server URL
 const savedServer = localStorage.getItem('xcolab_server_url') || SERVER_DEFAULT;
 serverUrlInput.value = savedServer;
 
 const getServerUrl = () => localStorage.getItem('xcolab_server_url') || SERVER_DEFAULT;
 
-// Check server health on load
+function setStatus(online, msg) {
+  statusDot.className = 'status-dot ' + (online ? 'online' : 'offline');
+  statusText.textContent = msg;
+  scanBtn.disabled = !online;
+}
+
 async function checkServer() {
-  const url = getServerUrl();
+  setStatus(false, '正在连接本地服务...');
   try {
-    const res = await fetch(`${url}/health`, { 
-      method: 'GET',
-      signal: AbortSignal.timeout(3000)
-    });
-    if (res.ok) {
-      statusDot.className = 'status-dot online';
-      statusText.textContent = '服务在线 ✓';
-      scanBtn.disabled = false;
-    } else {
-      throw new Error('server error');
-    }
+    const url = getServerUrl();
+    const controller = new AbortController();
+    setTimeout(() => controller.abort(), 3000);
+    await fetch(`${url}/health`, { signal: controller.signal, mode: 'no-cors' });
+    setStatus(true, '服务在线 ✓');
   } catch {
-    statusDot.className = 'status-dot offline';
-    statusText.textContent = '服务未启动，请先运行 Colab Server';
-    scanBtn.disabled = true;
+    setStatus(false, '服务未启动？运行 python3 colab-server.py');
   }
 }
 
-// Main button handler — toggles between scan and send
 async function handleScanBtn() {
   if (cachedTweets.length > 0) {
-    // 已有数据 → 发送
     sendToServer();
   } else {
-    // 无数据 → 扫描
     await scanTab();
-    // 扫描完切换按钮文案
     if (cachedTweets.length > 0) {
       const relevant = filterRelevant(cachedTweets);
       if (relevant.length > 0) {
@@ -66,7 +57,6 @@ async function handleScanBtn() {
   }
 }
 
-// Scan current tab
 async function scanTab() {
   result.className = 'result loading';
   result.textContent = '正在从页面提取推文...';
@@ -75,26 +65,21 @@ async function scanTab() {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     
-    // Inject content script
     await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       files: ['content.js']
     });
     
-    // Ping to confirm injection
-    await chrome.tabs.sendMessage(tab.id, { type: 'PING' });
-    
-    // Extract
+    await chrome.tabs.sendMessage(tab.id, { type: 'PING' }).catch(() => {});
     const results = await chrome.tabs.sendMessage(tab.id, { type: 'EXTRACT_TWEETS' });
     cachedTweets = results?.tweets || [];
     
     if (cachedTweets.length === 0) {
       result.className = 'result error';
-      result.textContent = '未找到推文。请确保在 X 的主页或用户资料页。';
+      result.textContent = '未找到推文。请确保在 X 主页或资料页。';
       return;
     }
     
-    // Filter relevant
     const relevant = filterRelevant(cachedTweets);
     previewCount.textContent = relevant.length;
     renderPreview(relevant);
@@ -102,7 +87,7 @@ async function scanTab() {
     
     result.className = 'result';
     if (relevant.length > 0) {
-      result.textContent = `找到 ${cachedTweets.length} 条，其中 ${relevant.length} 条相关。点按钮发送。`;
+      result.textContent = `找到 ${cachedTweets.length} 条，其中 ${relevant.length} 条相关。再点按钮发送。`;
     } else {
       result.textContent = `找到 ${cachedTweets.length} 条，无相关推文。`;
     }
@@ -113,7 +98,6 @@ async function scanTab() {
   }
 }
 
-// Filter relevant tweets
 function filterRelevant(tweets) {
   return tweets.filter(t => {
     const lower = t.text.toLowerCase();
@@ -121,7 +105,6 @@ function filterRelevant(tweets) {
   });
 }
 
-// Render preview
 function renderPreview(tweets) {
   previewList.innerHTML = '';
   tweets.slice(0, 10).forEach(t => {
@@ -132,7 +115,6 @@ function renderPreview(tweets) {
   });
 }
 
-// Send to server
 async function sendToServer() {
   if (cachedTweets.length === 0) return;
   
@@ -150,25 +132,29 @@ async function sendToServer() {
   
   const serverUrl = getServerUrl();
   
+  // Inject sender script into X page tab (no CORS restriction there)
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  
   try {
-    const res = await fetch(`${serverUrl}/save`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        tweets: relevant,
-        source: 'x-extension',
-        timestamp: new Date().toISOString()
-      }),
-      signal: AbortSignal.timeout(15000)
+    const response = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: (serverUrl, tweets) => {
+        return new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('POST', serverUrl + '/save', true);
+          xhr.setRequestHeader('Content-Type', 'application/json');
+          xhr.onload = () => resolve({ ok: true, count: tweets.length, status: xhr.status });
+          xhr.onerror = () => reject(new Error('Network error'));
+          xhr.send(JSON.stringify({ tweets, source: 'x-extension', timestamp: new Date().toISOString() }));
+          setTimeout(() => reject(new Error('Timeout')), 15000);
+        });
+      },
+      args: [serverUrl, relevant]
     });
     
-    if (!res.ok) throw new Error(await res.text());
-    
-    const data = await res.json();
     result.className = 'result success';
-    result.textContent = `✅ 已存 ${data.count} 条到知识库！`;
+    result.textContent = `✅ 已存 ${relevant.length} 条到知识库！`;
     
-    // Reset after 3s
     setTimeout(() => {
       cachedTweets = [];
       preview.style.display = 'none';
@@ -185,18 +171,15 @@ async function sendToServer() {
   }
 }
 
-// Save server URL on change
 serverUrlInput.addEventListener('change', () => {
   localStorage.setItem('xcolab_server_url', serverUrlInput.value);
   checkServer();
 });
 
-// Event listeners
 scanBtn.addEventListener('click', handleScanBtn);
 
-openSettingsBtn.addEventListener('click', () => {
+document.getElementById('openSettings').addEventListener('click', () => {
   chrome.tabs.create({ url: 'settings.html' });
 });
 
-// Init
 checkServer();
