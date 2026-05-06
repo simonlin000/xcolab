@@ -5,7 +5,8 @@
   "description": "一键把 X feed 内容存到知识库，让 AI Agent 自动整理",
   "permissions": [
     "activeTab",
-    "scripting"
+    "scripting",
+    "storage"
   ],
   "host_permissions": [
     "https://x.com/*",
@@ -25,9 +26,7 @@
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "background": {
-    "service_worker": "background.js"
-  },
+
   "content_scripts": [
     {
       "matches": ["https://x.com/*", "https://twitter.com/*"],
