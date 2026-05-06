@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { width: 320px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 16px;
+      text-align: center;
+    }
+    .header h1 { font-size: 16px; font-weight: 600; }
+    .header p { font-size: 11px; opacity: 0.85; margin-top: 4px; }
+    
+    .status-bar {
+      background: #f8f9fa;
+      padding: 8px 16px;
+      font-size: 12px;
+      color: #666;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .status-dot.online { background: #10b981; }
+    .status-dot.offline { background: #ef4444; }
+    
+    .content { padding: 16px; }
+    
+    .config {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .config label { font-size: 11px; color: #666; display: block; margin-bottom: 4px; }
+    .config input {
+      width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px;
+      font-size: 12px; outline: none;
+    }
+    .config input:focus { border-color: #667eea; }
+    
+    .btn {
+      width: 100%; padding: 12px; border: none; border-radius: 8px;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(102,126,234,0.4); }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    
+    .btn-secondary {
+      background: #f1f3f5; color: #495057; margin-top: 8px;
+    }
+    .btn-secondary:hover { background: #e9ecef; }
+    
+    .result {
+      margin-top: 12px; padding: 12px; border-radius: 8px;
+      font-size: 12px; display: none;
+    }
+    .result.success { background: #d1fae5; color: #065f46; display: block; }
+    .result.error { background: #fee2e2; color: #991b1b; display: block; }
+    .result.loading { background: #e0f2fe; color: #075985; display: block; }
+    
+    .preview {
+      margin-top: 12px; background: #f8f9fa; border-radius: 8px;
+      padding: 12px; max-height: 200px; overflow-y: auto; display: none;
+    }
+    .preview h3 { font-size: 12px; color: #666; margin-bottom: 8px; }
+    .preview-item { font-size: 11px; color: #444; padding: 6px 0; border-bottom: 1px solid #eee; }
+    .preview-item:last-child { border-bottom: none; }
+    .preview-handle { font-weight: 600; color: #667eea; }
+    
+    .footer {
+      text-align: center; padding: 12px; font-size: 10px; color: #999;
+      border-top: 1px solid #eee;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🦉 xcolab</h1>
+  <p>把 X 内容存进知识库</p>
+</div>
+
+<div class="status-bar">
+  <span class="status-dot offline" id="statusDot"></span>
+  <span id="statusText">正在连接本地服务...</span>
+</div>
+
+<div class="content">
+  <div class="config">
+    <label>本地服务地址</label>
+    <input type="text" id="serverUrl" value="http://localhost:8765" />
+  </div>
+  
+  <button class="btn btn-primary" id="scanBtn" disabled>
+    🔍 扫描当前页面
+  </button>
+  
+  <button class="btn btn-secondary" id="openSettings">
+    ⚙️ 知识库路径设置
+  </button>
+  
+  <div class="preview" id="preview">
+    <h3>📋 预览（<span id="previewCount">0</span> 条推文）</h3>
+    <div id="previewList"></div>
+  </div>
+  
+  <div class="result" id="result"></div>
+</div>
+
+<div class="footer">
+  Powered by xcolab · 需要配合 Colab Server 使用
+</div>
+
+<script src="popup.js"></script>
+</body>
+</html>

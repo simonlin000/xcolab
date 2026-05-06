@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8f9fa; }
+    .container { max-width: 600px; margin: 40px auto; padding: 0 20px; }
+    h1 { font-size: 20px; color: #333; margin-bottom: 24px; }
+    .card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .card h2 { font-size: 14px; color: #667eea; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 1px; }
+    .field { margin-bottom: 16px; }
+    .field label { display: block; font-size: 13px; color: #666; margin-bottom: 6px; font-weight: 500; }
+    .field input, .field select { width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; outline: none; }
+    .field input:focus, .field select:focus { border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); }
+    .field .hint { font-size: 11px; color: #999; margin-top: 4px; }
+    .save-btn { width: 100%; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .save-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(102,126,234,0.3); }
+    .tip { background: #e0f2fe; border-radius: 8px; padding: 12px 16px; font-size: 12px; color: #075985; margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>⚙️ xcolab 设置</h1>
+  
+  <div class="tip">💡 这些设置会被保存到浏览器本地，配合 Colab Server 使用。</div>
+  
+  <div class="card">
+    <h2>📁 知识库设置</h2>
+    <div class="field">
+      <label>知识库路径</label>
+      <input type="text" id="vaultPath" placeholder="/Users/你的用户名/Documents/知识库" />
+      <p class="hint">推文内容会保存到这个目录下的 "X资源收藏/" 文件夹</p>
+    </div>
+  </div>
+  
+  <div class="card">
+    <h2>🔍 过滤设置</h2>
+    <div class="field">
+      <label>关键词模式</label>
+      <select id="keywordMode">
+        <option value="zh">中文为主（推荐）</option>
+        <option value="en">英文为主</option>
+        <option value="both">中英文混合</option>
+      </select>
+    </div>
+  </div>
+  
+  <div class="card">
+    <h2>🌐 服务设置</h2>
+    <div class="field">
+      <label>Colab Server 地址</label>
+      <input type="text" id="serverUrl" value="http://localhost:8765" />
+      <p class="hint">Colab Server 启动后会在这个地址监听</p>
+    </div>
+  </div>
+  
+  <button class="save-btn" id="saveBtn">保存设置</button>
+</div>
+<script src="settings.js"></script>
+</body>
+</html>
