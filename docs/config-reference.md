@@ -9,7 +9,7 @@
 WS_URL = "ws://127.0.0.1:9222/devtools/browser/<your-browser-id>"
 
 # X 用户名
-USERNAME = "simonlin0812"
+USERNAME = "your-x-username"
 
 # 知识库路径（支持绝对/相对路径）
 VAULT = Path("/Users/你的路径/X资源收藏")

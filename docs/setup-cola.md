@@ -30,7 +30,7 @@ Chrome WS：ws://127.0.0.1:9222/devtools/browser/<browser-id>
 
 ## Cola Agent 直接调用
 
-当 Simon 说"去扫一下 X"时，执行：
+当你说"去扫一下 X"时，执行：
 
 ```bash
 python3 /path/to/xcolab/scripts/x-scan.py

@@ -15,7 +15,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse
 
 # ===================== 配置区 =====================
-DEFAULT_VAULT = str(Path.home() / "Documents" / "Simon讲章知识库" / "02-Areas" / "AI工具助手" / "X资源收藏")
+DEFAULT_VAULT = str(Path.home() / "Documents" / "KnowledgeBase" / "X资源收藏")
 PORT = 8765
 # ===============================================
 

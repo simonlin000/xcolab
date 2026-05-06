@@ -36,12 +36,7 @@
 
 ### 第四步：配置知识库路径（可选）
 
-如果你的知识库不是 Obsidian，默认路径是：
-```
-~/Documents/Simon讲章知识库/02-Areas/AI工具助手/X资源收藏
-```
-
-如果路径不对，点扩展工具栏的 🦉 → 点右上角设置 ⚙️ → 填入你的知识库文件夹路径。
+点扩展工具栏的 🦉 → 点右上角设置 ⚙️ → 填入你的知识库文件夹路径。
 
 ### 第五步：用！
 
@@ -88,7 +83,7 @@ crontab -e
 加入这行（每天早上 9 点自动跑）：
 
 ```cron
-0 9 * * * /usr/bin/python3 /Users/YOUR_NAME/xcolab/scripts/x-scan.py >> /tmp/xcolab.log 2>&1
+0 9 * * * /usr/bin/python3 /path/to/xcolab/scripts/x-scan.py >> /tmp/xcolab.log 2>&1
 ```
 
 > ⚠️ 注意：cron 运行期间 Chrome 不能关！
@@ -103,7 +98,7 @@ crontab -e
   "chrome_user_data": "",
   "keywords_zh": ["ai", "人工智能", "chatgpt", "claude"],
   "keywords_en": ["gpt", "llm", "agent", "cursor"],
-  "vault_path": "~/Documents/Simon讲章知识库/02-Areas/AI工具助手/X资源收藏"
+  "vault_path": "~/Documents/你的知识库/X资源收藏"
 }
 ```
 
@@ -150,7 +145,7 @@ count: 3
 **A**：Chrome → `chrome://extensions` → 确保 xcolab 已启用 → 点击扩展图标旁的 🧩 → 在工具栏显示
 
 ### Q：怎么知道存进去了？
-**A**：打开 Obsidian 或任何 Markdown 编辑器，去 `02-Areas/AI工具助手/X资源收藏` 目录里看。
+**A**：打开 Obsidian 或任何 Markdown 编辑器，去知识库的 X资源收藏 目录里看。
 
 ---
 
