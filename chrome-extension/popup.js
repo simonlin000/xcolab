@@ -48,6 +48,24 @@ async function checkServer() {
   }
 }
 
+// Main button handler — toggles between scan and send
+async function handleScanBtn() {
+  if (cachedTweets.length > 0) {
+    // 已有数据 → 发送
+    sendToServer();
+  } else {
+    // 无数据 → 扫描
+    await scanTab();
+    // 扫描完切换按钮文案
+    if (cachedTweets.length > 0) {
+      const relevant = filterRelevant(cachedTweets);
+      if (relevant.length > 0) {
+        scanBtn.textContent = `📤 发送（${relevant.length}条）`;
+      }
+    }
+  }
+}
+
 // Scan current tab
 async function scanTab() {
   result.className = 'result loading';
@@ -57,12 +75,16 @@ async function scanTab() {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     
-    // Inject content script first, then call it
+    // Inject content script
     await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       files: ['content.js']
     });
+    
+    // Ping to confirm injection
     await chrome.tabs.sendMessage(tab.id, { type: 'PING' });
+    
+    // Extract
     const results = await chrome.tabs.sendMessage(tab.id, { type: 'EXTRACT_TWEETS' });
     cachedTweets = results?.tweets || [];
     
@@ -79,71 +101,16 @@ async function scanTab() {
     preview.style.display = 'block';
     
     result.className = 'result';
-    result.textContent = `找到 ${cachedTweets.length} 条推文，其中 ${relevant.length} 条相关`;
+    if (relevant.length > 0) {
+      result.textContent = `找到 ${cachedTweets.length} 条，其中 ${relevant.length} 条相关。点按钮发送。`;
+    } else {
+      result.textContent = `找到 ${cachedTweets.length} 条，无相关推文。`;
+    }
     
   } catch (err) {
     result.className = 'result error';
     result.textContent = '提取失败：' + err.message;
   }
-}
-
-// Extract tweets from page (runs in page context)
-function extractTweets() {
-  const tweets = [];
-  
-  // Scroll to load more
-  const initialScroll = window.scrollY;
-  for (let i = 0; i < 3; i++) {
-    window.scrollBy(0, 800);
-    window.scrollTo(0, document.body.scrollHeight);
-  }
-  window.scrollTo(0, initialScroll);
-  
-  const articles = document.querySelectorAll('article[role="article"]');
-  
-  articles.forEach((article, i) => {
-    if (i > 30) return;
-    
-    // Handle
-    let handle = '';
-    const links = article.querySelectorAll('a[role="link"]');
-    for (const a of links) {
-      const spans = a.querySelectorAll('span');
-      for (const s of spans) {
-        const t = s.innerText.trim();
-        if (t && t.startsWith('@') && t.length > 1) {
-          handle = t.slice(1);
-          break;
-        }
-      }
-      if (handle) break;
-    }
-    
-    // Time
-    const timeEl = article.querySelector('time');
-    const time = timeEl ? (timeEl.getAttribute('datetime') || timeEl.textContent) : '';
-    
-    // Text
-    const textEl = article.querySelector('[data-testid="tweetText"]');
-    const text = textEl ? textEl.innerText.trim() : '';
-    
-    // Stats
-    const stats = [];
-    const statEls = article.querySelectorAll('[aria-label]');
-    for (const el of statEls) {
-      const label = el.getAttribute('aria-label');
-      if (label && (label.includes('回复') || label.includes('转发') || label.includes('喜欢') || label.includes('浏览') ||
-          label.includes('repost') || label.includes('reply') || label.includes('like') || label.includes('view'))) {
-        stats.push(label);
-      }
-    }
-    
-    if (text) {
-      tweets.push({ handle, time, text, stats });
-    }
-  });
-  
-  return tweets;
 }
 
 // Filter relevant tweets
@@ -167,16 +134,12 @@ function renderPreview(tweets) {
 
 // Send to server
 async function sendToServer() {
-  if (cachedTweets.length === 0) {
-    result.className = 'result error';
-    result.textContent = '还没有扫描内容，请先点"扫描当前页面"';
-    return;
-  }
+  if (cachedTweets.length === 0) return;
   
   const relevant = filterRelevant(cachedTweets);
   if (relevant.length === 0) {
     result.className = 'result error';
-    result.textContent = '没有找到相关的推文';
+    result.textContent = '没有相关推文';
     return;
   }
   
@@ -203,7 +166,7 @@ async function sendToServer() {
     
     const data = await res.json();
     result.className = 'result success';
-    result.textContent = `✅ 已存 ${data.count || relevant.length} 条到知识库！`;
+    result.textContent = `✅ 已存 ${data.count} 条到知识库！`;
     
     // Reset after 3s
     setTimeout(() => {
@@ -218,7 +181,7 @@ async function sendToServer() {
     result.className = 'result error';
     result.textContent = '发送失败：' + err.message;
     scanBtn.disabled = false;
-    scanBtn.textContent = '🔍 扫描当前页面';
+    scanBtn.textContent = '📤 发送';
   }
 }
 
@@ -229,16 +192,7 @@ serverUrlInput.addEventListener('change', () => {
 });
 
 // Event listeners
-scanBtn.addEventListener('click', scanBtn.textContent.includes('扫描') ? scanTab : sendToServer);
-
-// Toggle send mode
-scanBtn.addEventListener('click', () => {
-  if (cachedTweets.length > 0) {
-    sendToServer();
-  } else {
-    scanTab();
-  }
-});
+scanBtn.addEventListener('click', handleScanBtn);
 
 openSettingsBtn.addEventListener('click', () => {
   chrome.tabs.create({ url: 'settings.html' });
