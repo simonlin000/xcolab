@@ -57,13 +57,9 @@ async function scanTab() {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     
-    // Inject and run content script
-    const results = await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: extractTweets
-    });
-    
-    cachedTweets = results[0].result || [];
+    // Call content script's extract function via message
+    const results = await chrome.tabs.sendMessage(tab.id, { type: 'EXTRACT_TWEETS' });
+    cachedTweets = results?.tweets || [];
     
     if (cachedTweets.length === 0) {
       result.className = 'result error';
